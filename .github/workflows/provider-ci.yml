@@ -84,7 +84,7 @@ jobs:
         run: |
           make schema-version-diff
   lint:
-    runs-on: Ubuntu-Jumbo-Runner
+    runs-on: ubuntu-22.04
     needs: detect-noop
     if: needs.detect-noop.outputs.noop != 'true' && !inputs.golangci-skip
 
@@ -343,7 +343,7 @@ jobs:
         run: make local-deploy
 
   publish-artifacts:
-    runs-on: e2-standard-8
+    runs-on: ubuntu-22.04
     needs: detect-noop
     if: needs.detect-noop.outputs.noop != 'true'
 
@@ -370,13 +370,13 @@ jobs:
           version: ${{ env.DOCKER_BUILDX_VERSION }}
           install: true
 
-      - name: Login to Upbound
-        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2
-        if: env.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR != ''
-        with:
-          registry: xpkg.upbound.io
-          username: ${{ secrets.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR }}
-          password: ${{ secrets.UPBOUND_MARKETPLACE_PUSH_ROBOT_PSW }}
+#      - name: Login to Upbound
+#        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2
+#        if: env.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR != ''
+#        with:
+#          registry: xpkg.upbound.io
+#          username: ${{ secrets.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR }}
+#          password: ${{ secrets.UPBOUND_MARKETPLACE_PUSH_ROBOT_PSW }}
 
       - name: Checkout
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
@@ -428,7 +428,11 @@ jobs:
           path: _output/**
 
       - name: Publish Artifacts
-        run: make publish BRANCH_NAME=${GITHUB_REF##*/}
+        run: |
+          curl -sL "https://cli.upbound.io" | sh
+          sudo mv up /usr/local/bin/
+          up login -u ${{ secrets.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR }} -p ${{ secrets.UPBOUND_MARKETPLACE_PUSH_ROBOT_PSW }}
+          make publish BRANCH_NAME=${GITHUB_REF##*/} REGISTRY_ORGS="xpkg.upbound.io/stakater" XPKG_REG_ORGS="xpkg.upbound.io/stakater" XPKG_REG_ORGS_NO_PROMOTE="xpkg.upbound.io/stakater"
 
   check-examples:
     runs-on: ubuntu-22.04
